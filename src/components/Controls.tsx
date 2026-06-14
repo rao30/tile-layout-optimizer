@@ -88,10 +88,15 @@ export function Controls() {
   const tile = useLayoutStore((s) => s.tile);
   const grout = useLayoutStore((s) => s.grout);
   const layout = useLayoutStore((s) => s.layout);
+  const floor = useLayoutStore((s) => s.floor);
   const setShower = useLayoutStore((s) => s.setShower);
   const setTile = useLayoutStore((s) => s.setTile);
   const setGrout = useLayoutStore((s) => s.setGrout);
   const setLayout = useLayoutStore((s) => s.setLayout);
+  const setFloor = useLayoutStore((s) => s.setFloor);
+  const setFloorTile = useLayoutStore((s) => s.setFloorTile);
+  const setFloorGrout = useLayoutStore((s) => s.setFloorGrout);
+  const setFloorLayout = useLayoutStore((s) => s.setFloorLayout);
 
   return (
     <div className="space-y-5 overflow-y-auto max-h-full pr-1">
@@ -223,6 +228,111 @@ export function Controls() {
               onChange={(v) => setLayout({ manualStartOffsetY: v })}
             />
           </div>
+        )}
+      </Section>
+
+      <Section title="Floor Tile">
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="floor-enabled"
+            checked={floor.enabled}
+            onChange={(e) => setFloor({ enabled: e.target.checked })}
+            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+          />
+          <label htmlFor="floor-enabled" className="text-sm text-slate-600">
+            Tile the floor
+          </label>
+        </div>
+
+        {floor.enabled && (
+          <>
+            <PresetSelect
+              presets={TILE_PRESETS}
+              selectedId={floor.tile.presetId}
+              onSelect={(id, value) => {
+                if (id && value) {
+                  setFloorTile({ presetId: id, width: value.width!, height: value.height! });
+                } else {
+                  setFloorTile({ presetId: null });
+                }
+              }}
+              customLabel="Custom floor tile"
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <NumberInput
+                label="Width"
+                value={floor.tile.width}
+                min={0.5}
+                step={0.25}
+                onChange={(v) => setFloorTile({ width: v, presetId: null })}
+              />
+              <NumberInput
+                label="Height"
+                value={floor.tile.height}
+                min={0.5}
+                step={0.25}
+                onChange={(v) => setFloorTile({ height: v, presetId: null })}
+              />
+            </div>
+
+            <PresetSelect
+              presets={GROUT_PRESETS}
+              selectedId={floor.grout.presetId}
+              onSelect={(id, value) => {
+                if (id && value) {
+                  setFloorGrout({ presetId: id, size: value.size! });
+                } else {
+                  setFloorGrout({ presetId: null });
+                }
+              }}
+              customLabel="Custom grout"
+            />
+            <NumberInput
+              label="Grout width"
+              value={floor.grout.size}
+              min={0.0625}
+              max={0.5}
+              step={0.0625}
+              onChange={(v) => setFloorGrout({ size: v, presetId: null })}
+            />
+
+            <div className="grid grid-cols-2 gap-2">
+              <label className="block">
+                <span className="text-xs text-slate-500">Orientation</span>
+                <select
+                  value={floor.layout.orientation}
+                  onChange={(e) => setFloorLayout({ orientation: e.target.value as TileOrientation })}
+                  className="w-full mt-0.5 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="horizontal">Horizontal</option>
+                  <option value="vertical">Vertical</option>
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="text-xs text-slate-500">Row Offset</span>
+                <select
+                  value={floor.layout.offsetPattern}
+                  onChange={(e) => setFloorLayout({ offsetPattern: e.target.value as OffsetPattern })}
+                  className="w-full mt-0.5 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {OFFSET_OPTIONS.map((o) => (
+                    <option key={o.id} value={o.id}>{o.label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <NumberInput
+              label="Min cut size (sliver threshold)"
+              value={floor.layout.minCutSize}
+              min={0.5}
+              max={6}
+              step={0.25}
+              onChange={(v) => setFloorLayout({ minCutSize: v })}
+            />
+          </>
         )}
       </Section>
     </div>

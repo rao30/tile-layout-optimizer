@@ -134,3 +134,17 @@ export const DEFAULT_LAYOUT: LayoutConfig = {
   manualStartOffsetX: null,
   manualStartOffsetY: null,
 };
+
+export interface FloorConfig {
+  enabled: boolean;
+  tile: TileConfig;
+  grout: GroutConfig;
+  layout: LayoutConfig;
+}
+
+export const DEFAULT_FLOOR: FloorConfig = {
+  enabled: false,
+  tile: { ...DEFAULT_TILE },
+  grout: { ...DEFAULT_GROUT },
+  layout: { ...DEFAULT_LAYOUT },
+};

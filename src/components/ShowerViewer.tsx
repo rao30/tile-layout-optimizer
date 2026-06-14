@@ -7,6 +7,7 @@ import { inchesToMeters } from '../lib/layoutOptimizer';
 function Scene() {
   const shower = useLayoutStore((s) => s.shower);
   const grout = useLayoutStore((s) => s.grout);
+  const floor = useLayoutStore((s) => s.floor);
   const layoutResult = useLayoutStore((s) => s.layoutResult);
 
   if (!layoutResult) return null;
@@ -46,6 +47,7 @@ function Scene() {
         rightLayout={layoutResult.walls.right}
         floorLayout={layoutResult.walls.floor}
         groutSize={grout.size}
+        floorGroutSize={floor.enabled ? floor.grout.size : grout.size}
       />
 
       <Grid

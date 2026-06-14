@@ -20,9 +20,10 @@ interface WallStatsProps {
   label: string;
   isSelected: boolean;
   onSelect: () => void;
+  disabled?: boolean;
 }
 
-function WallStats({ wall, label, isSelected, onSelect }: WallStatsProps) {
+function WallStats({ wall, label, isSelected, onSelect, disabled }: WallStatsProps) {
   const fullCount = wall.tiles.filter((t) => !t.isCut).length;
   const cutCount = wall.tiles.filter((t) => t.isCut && t.cutType !== 'sliver').length;
   const sliverCount = wall.sliverCount;
@@ -34,24 +35,34 @@ function WallStats({ wall, label, isSelected, onSelect }: WallStatsProps) {
         isSelected
           ? 'border-blue-500 bg-blue-50'
           : 'border-slate-200 bg-white hover:border-slate-300'
-      }`}
+      } ${disabled ? 'opacity-60' : ''}`}
     >
       <div className="flex justify-between items-center mb-1">
         <span className="font-medium text-sm text-slate-800">{label}</span>
         <span className={`text-xs px-2 py-0.5 rounded-full ${
-          sliverCount > 0 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
+          disabled
+            ? 'bg-slate-100 text-slate-500'
+            : sliverCount > 0
+              ? 'bg-amber-100 text-amber-700'
+              : 'bg-green-100 text-green-700'
         }`}>
-          {sliverCount > 0 ? `${sliverCount} sliver${sliverCount > 1 ? 's' : ''}` : 'Good'}
+          {disabled ? 'No tile' : sliverCount > 0 ? `${sliverCount} sliver${sliverCount > 1 ? 's' : ''}` : 'Good'}
         </span>
       </div>
       <div className="text-xs text-slate-500 space-y-0.5">
-        <div>{wall.wallWidth}" × {wall.wallHeight}" · {wall.tiles.length} tiles</div>
-        <div>{fullCount} full · {cutCount} cut{sliverCount > 0 ? ` · ${sliverCount} sliver` : ''}</div>
-        {(wall.leftCut > 0.01 || wall.rightCut > 0.01) && (
-          <div>L/R cuts: {formatInches(wall.leftCut)} / {formatInches(wall.rightCut)}</div>
-        )}
-        {(wall.topCut > 0.01 || wall.bottomCut > 0.01) && (
-          <div>T/B cuts: {formatInches(wall.topCut)} / {formatInches(wall.bottomCut)}</div>
+        {disabled ? (
+          <div>{wall.wallWidth}" × {wall.wallHeight}" · untiled</div>
+        ) : (
+          <>
+            <div>{wall.wallWidth}" × {wall.wallHeight}" · {wall.tiles.length} tiles</div>
+            <div>{fullCount} full · {cutCount} cut{sliverCount > 0 ? ` · ${sliverCount} sliver` : ''}</div>
+            {(wall.leftCut > 0.01 || wall.rightCut > 0.01) && (
+              <div>L/R cuts: {formatInches(wall.leftCut)} / {formatInches(wall.rightCut)}</div>
+            )}
+            {(wall.topCut > 0.01 || wall.bottomCut > 0.01) && (
+              <div>T/B cuts: {formatInches(wall.topCut)} / {formatInches(wall.bottomCut)}</div>
+            )}
+          </>
         )}
       </div>
     </button>
@@ -67,6 +78,7 @@ const WALL_LABELS: Record<WallId, string> = {
 
 export function LayoutStats() {
   const layoutResult = useLayoutStore((s) => s.layoutResult);
+  const floorEnabled = useLayoutStore((s) => s.floor.enabled);
   const selectedWall = useLayoutStore((s) => s.selectedWall);
   const setSelectedWall = useLayoutStore((s) => s.setSelectedWall);
 
@@ -93,6 +105,7 @@ export function LayoutStats() {
             label={WALL_LABELS[wallId]}
             isSelected={selectedWall === wallId}
             onSelect={() => setSelectedWall(wallId)}
+            disabled={wallId === 'floor' && !floorEnabled}
           />
         ))}
       </div>

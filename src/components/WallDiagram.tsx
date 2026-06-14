@@ -53,28 +53,38 @@ export function WallDiagram() {
   const layoutResult = useLayoutStore((s) => s.layoutResult);
   const selectedWall = useLayoutStore((s) => s.selectedWall);
   const grout = useLayoutStore((s) => s.grout);
+  const floor = useLayoutStore((s) => s.floor);
 
   if (!layoutResult) return null;
 
   const wall = layoutResult.walls[selectedWall];
+  const wallLabel = selectedWall === 'floor' ? 'Floor' : `${selectedWall.charAt(0).toUpperCase() + selectedWall.slice(1)} Wall`;
+  const groutSize = selectedWall === 'floor' && floor.enabled ? floor.grout.size : grout.size;
+  const isFloorDisabled = selectedWall === 'floor' && !floor.enabled;
   const maxWidth = 340;
   const scale = maxWidth / wall.wallWidth;
   const diagramHeight = wall.wallHeight * scale;
-  const groutPx = Math.max(grout.size * scale, 1);
+  const groutPx = Math.max(groutSize * scale, 1);
 
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-semibold text-slate-700">
-        2D Layout — {selectedWall.charAt(0).toUpperCase() + selectedWall.slice(1)} Wall
+        2D Layout — {wallLabel}
       </h3>
 
       <div
         className="relative mx-auto border-2 border-slate-400 bg-[#b8b3ad]"
         style={{ width: maxWidth, height: diagramHeight }}
       >
-        {wall.tiles.map((tile) => (
-          <TileCell key={tile.id} tile={tile} scale={scale} groutPx={groutPx} />
-        ))}
+        {isFloorDisabled ? (
+          <div className="absolute inset-0 flex items-center justify-center text-sm text-slate-500">
+            No floor tile selected
+          </div>
+        ) : (
+          wall.tiles.map((tile) => (
+            <TileCell key={tile.id} tile={tile} scale={scale} groutPx={groutPx} />
+          ))
+        )}
 
         {/* Dimension annotations */}
         <div className="absolute -bottom-5 left-0 right-0 text-center text-xs text-slate-500">
@@ -89,7 +99,9 @@ export function WallDiagram() {
       </div>
 
       <div className="text-xs text-slate-500 text-center">
-        Offset: {formatInches(wall.startOffsetX)} from left, {formatInches(wall.startOffsetY)} from bottom
+        {isFloorDisabled
+          ? `${wall.wallWidth}" × ${wall.wallHeight}" shower pan`
+          : `Offset: ${formatInches(wall.startOffsetX)} from left, ${formatInches(wall.startOffsetY)} from bottom`}
       </div>
     </div>
   );

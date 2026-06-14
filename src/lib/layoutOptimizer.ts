@@ -1,4 +1,4 @@
-import type { OffsetPattern, PlacedTile, TileOrientation } from '../types';
+import type { OffsetPattern, PlacedTile, TileOrientation, WallId, WallLayout } from '../types';
 import { OFFSET_OPTIONS } from '../types';
 
 const INCH_TO_SCENE = 0.0254; // meters per inch for Three.js
@@ -271,6 +271,23 @@ export function optimizeLayout(params: Omit<LayoutParams, 'startOffsetX' | 'star
   return best!;
 }
 
+function emptyWallLayout(wallId: WallId, wallWidth: number, wallHeight: number): WallLayout {
+  return {
+    wallId,
+    wallWidth,
+    wallHeight,
+    tiles: [],
+    startOffsetX: 0,
+    startOffsetY: 0,
+    score: 0,
+    leftCut: 0,
+    rightCut: 0,
+    topCut: 0,
+    bottomCut: 0,
+    sliverCount: 0,
+  };
+}
+
 export function computeFullLayout(
   shower: { width: number; depth: number; height: number },
   tile: { width: number; height: number },
@@ -281,6 +298,18 @@ export function computeFullLayout(
     minCutSize: number;
     manualStartOffsetX: number | null;
     manualStartOffsetY: number | null;
+  },
+  floorConfig?: {
+    enabled: boolean;
+    tile: { width: number; height: number };
+    grout: { size: number };
+    layout: {
+      orientation: TileOrientation;
+      offsetPattern: OffsetPattern;
+      minCutSize: number;
+      manualStartOffsetX: number | null;
+      manualStartOffsetY: number | null;
+    };
   },
 ) {
   const baseParams = {
@@ -308,7 +337,33 @@ export function computeFullLayout(
   const back = computeWall(shower.width, shower.height);
   const left = computeWall(shower.depth, shower.height);
   const right = computeWall(shower.depth, shower.height);
-  const floor = computeWall(shower.width, shower.depth);
+
+  let floor;
+  if (floorConfig?.enabled) {
+    const floorParams = {
+      tileWidth: floorConfig.tile.width,
+      tileHeight: floorConfig.tile.height,
+      groutSize: floorConfig.grout.size,
+      orientation: floorConfig.layout.orientation,
+      offsetPattern: floorConfig.layout.offsetPattern,
+      minCutSize: floorConfig.layout.minCutSize,
+    };
+    const computeFloor = () => {
+      if (floorConfig.layout.manualStartOffsetX !== null && floorConfig.layout.manualStartOffsetY !== null) {
+        return computeLayout({
+          ...floorParams,
+          wallWidth: shower.width,
+          wallHeight: shower.depth,
+          startOffsetX: floorConfig.layout.manualStartOffsetX,
+          startOffsetY: floorConfig.layout.manualStartOffsetY,
+        });
+      }
+      return optimizeLayout({ ...floorParams, wallWidth: shower.width, wallHeight: shower.depth });
+    };
+    floor = computeFloor();
+  } else {
+    floor = emptyWallLayout('floor', shower.width, shower.depth);
+  }
 
   const walls = {
     back: { wallId: 'back' as const, wallWidth: shower.width, wallHeight: shower.height, ...back },
@@ -317,8 +372,11 @@ export function computeFullLayout(
     floor: { wallId: 'floor' as const, wallWidth: shower.width, wallHeight: shower.depth, ...floor },
   };
 
-  const totalSlivers = Object.values(walls).reduce((sum, w) => sum + w.sliverCount, 0);
-  const averageScore = Object.values(walls).reduce((sum, w) => sum + w.score, 0) / 4;
+  const scoredWalls = floorConfig?.enabled
+    ? Object.values(walls)
+    : [walls.back, walls.left, walls.right];
+  const totalSlivers = scoredWalls.reduce((sum, w) => sum + w.sliverCount, 0);
+  const averageScore = scoredWalls.reduce((sum, w) => sum + w.score, 0) / scoredWalls.length;
 
   return { walls, totalSlivers, averageScore };
 }
